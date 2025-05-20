@@ -24,7 +24,7 @@ No dependencies beyond the Python standard library (and `matplotlib` for `exampl
 from srf_reader import read_srf_psth
 from example.example import plot_srf_contents
 
-spike_data = read_srf_psth("example.srf")
+spike_data = read_srf_psth("example/example.srf")
 plot_srf_contents(spike_data)
 ```
 ![PSTH Histogram](example/example.png)
