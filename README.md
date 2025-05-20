@@ -27,4 +27,4 @@ from example.example import plot_srf_contents
 spike_data = read_srf_psth("example.srf")
 plot_srf_contents(spike_data)
 ```
-![PSTH Histogram](images/example.png)
+![PSTH Histogram](example/example.png)
