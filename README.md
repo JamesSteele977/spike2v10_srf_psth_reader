@@ -2,8 +2,14 @@
 
 A lightweight Python reader for Spike2v10 `.srf` PSTH files. **Assumes 32-bit encoding and 50khz max tick fs.**
 
-Return format `List[Tuple[float, List[float]]]`:
+Return format `Dict[str, float | int], List[Tuple[float, List[float]]]`:
 ```python
+{
+    "N Bins Per Sweep" : int,
+    "Bin Size (sec)" : float,
+    "Offset (sec)" : float, 
+    "Base Tick dt (sec)" : float
+}
 [
     (sweep1_start_time, [sweep1_event_time_1, sweep1_event_time_2, ...]),
     (sweep2_start_time, [sweep2_event_time_1, sweep2_event_time_2, ...]),

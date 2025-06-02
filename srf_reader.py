@@ -1,26 +1,19 @@
 import re
-from typing import List, Tuple
+import struct
+from typing import List, Tuple, Dict
 
-def decode_chunk_to_seconds(chunk: bytes, spike2v10_max_fs: float=5e5, return_ticks: bool=False) -> int | float:
-    """ Decode a 4-byte chunk from the .srf file into a float (seconds or ticks). 
-    32-bit unsigned integer gives channel ticks of event times.
-    Args:
-        chunk (bytes): 4-byte chunk from the .srf file.
-        spike2v10_max_fs (float): Maximum sampling frequency of Spike2 v10. Default is 5e5.
-        return_ticks (bool): If True, return raw ticks instead of seconds. Default is False. 
-    Returns:
-        int | float: Decoded value in ticks or seconds. 
-    """
-    u32: int = int.from_bytes(chunk, byteorder="little", signed=False)
-    if return_ticks:
-        return u32
-    return u32 / spike2v10_max_fs
-
-def read_srf_psth(srfpath: str) -> List[Tuple[float, List[float]]]:
+def read_srf_psth(srfpath: str) -> Tuple[Dict[str, float | int], List[Tuple[float, List[float]]]]:
     """ Read a .srf psth file from Spik2v10 and extract sweep/event times. 
     Args:
         srfpath (str): Path to the .srf file.
     Returns: 
+        Dict[str, float | int]: File metadata in the format:
+        {
+            "N Bins Per Sweep" : int,
+            "Bin Size (sec)" : float,
+            "Offset (sec)" : float, 
+            "Base Tick dt (sec)" : float
+        }
         List[Tuple[float, List[float]]]: File contents in the format:
             [
                 (sweep1_start_time, [sweep1_event_time_1, sweep1_event_time_2, ...]),
@@ -34,6 +27,13 @@ def read_srf_psth(srfpath: str) -> List[Tuple[float, List[float]]]:
     with open(srfpath, "rb") as f:
         raw_bytes: bytes = f.read()
 
+    file_metadata: Dict[str, float | int] = {
+        "N Bins Per Sweep": int.from_bytes(raw_bytes[8:12], byteorder="little", signed=False),
+        "Bin Size (sec)": struct.unpack("<d", raw_bytes[16:24])[0],
+        "Offset (sec)": struct.unpack("<d", raw_bytes[24:32])[0],
+        "Base Tick dt (sec)": struct.unpack("<d", raw_bytes[40:48])[0]
+    }
+
     SWEEP_PATTERN: re.Pattern = re.compile(
         b"(.{12})"                                  # channel preamble: 12 bytes (sweep start time, sweep end time, unknown)
         b"\xff{16}\x00{36}\xff{16}"                 # channel header: ffff x 4 , .... x 9 , ffff x 4 
@@ -43,7 +43,7 @@ def read_srf_psth(srfpath: str) -> List[Tuple[float, List[float]]]:
     )
 
     file_contents: List[Tuple[float, List[float]]] = []
-    for offset in range(0, len(raw_bytes), 4): # jump 4 bytes for 32-bit encoding 
+    for offset in range(64, len(raw_bytes), 4): # start at bottom of header, jump 4 bytes for 32-bit encoding 
         
         match: re.Match | None = SWEEP_PATTERN.match(raw_bytes, offset) 
         if match:
@@ -52,12 +52,12 @@ def read_srf_psth(srfpath: str) -> List[Tuple[float, List[float]]]:
             event_times: List[float] = []
             capture: bytes = match.group(2)
             for capture_offset in range(0, len(capture), 4):
-                event_times.append(decode_chunk_to_seconds(capture[capture_offset:capture_offset + 4]))
+                event_times.append(int.from_bytes(capture[capture_offset:capture_offset + 4], byteorder="little", signed=False) * file_metadata["Base Tick dt (sec)"])
             
             # Decode sweep start time
-            sweep_time: float = decode_chunk_to_seconds(match.group(1)[:4])
+            sweep_time: float = int.from_bytes(match.group(1)[:4], byteorder="little", signed=False) * file_metadata["Base Tick dt (sec)"]
             file_contents.append((sweep_time, event_times))
     
-    return file_contents
+    return file_metadata, file_contents
 
             
