@@ -35,10 +35,10 @@ def read_srf_psth(srfpath: str) -> Tuple[Dict[str, float | int], List[Tuple[floa
     }
 
     SWEEP_PATTERN: re.Pattern = re.compile(
-        b"(.{12})"                                  # channel preamble: 12 bytes (sweep start time, sweep end time, unknown)
-        b"\xff{16}\x00{36}\xff{16}"                 # channel header: ffff x 4 , .... x 9 , ffff x 4 
-        b"((?:.{4})*?)"                             # body of channel containing event times
-        b"(?=(?:.{12}\xff{16}\x00{36}\xff{16})|$)", # Next channel preamble/header or file end
+        b"(.{12})"                                      # channel preamble: 12 bytes (sweep start time, sweep end time, unknown)
+        b"\xff{16}.{2}\x00{34}\xff{16}"                 # channel header: ffff x 4 , .... x 9 , ffff x 4 
+        b"((?:.{4})*?)"                                 # body of channel containing event times
+        b"(?=(?:.{12}\xff{16}.{2}\x00{34}\xff{16})|$)", # Next channel preamble/header or file end
         re.DOTALL
     )
 
