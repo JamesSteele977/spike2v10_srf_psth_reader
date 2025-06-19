@@ -3,26 +3,22 @@ import struct
 from typing import List, Tuple, Dict
 
 def read_srf_psth(srfpath: str) -> Tuple[Dict[str, float | int], List[Tuple[float, List[float]]]]:
-    """ Read a .srf psth file from Spik2v10 and extract sweep/event times. 
+    """
+    Reads a .srf PSTH file from Spike2v10 and extracts sweep/event times.
+
     Args:
-        srfpath (str): Path to the .srf file.
-    Returns: 
-        Dict[str, float | int]: File metadata in the format:
-        {
-            "N Bins Per Sweep" : int,
-            "Bin Size (sec)" : float,
-            "Offset (sec)" : float, 
-            "Base Tick dt (sec)" : float
-        }
-        List[Tuple[float, List[float]]]: File contents in the format:
-            [
-                (sweep1_start_time, [sweep1_event_time_1, sweep1_event_time_2, ...]),
-                (sweep2_start_time, [sweep2_event_time_1, sweep2_event_time_2, ...]),
-                ...
-                (sweepN_start_time, [sweepN_event_time_1, sweepN_event_time_2, ...])
-            ]
-        where trial_start_time is the time of sweep triggers (e.g. stimulus onset)
-        and sweepN_event_time_M is the time of the Mth event in the Nth sweep (e.g. neuron APs)
+        srfpath: Path to the .srf file.
+
+    Returns:
+        A tuple containing:
+            - metadata (dict): File metadata with the following keys:
+                - "N Bins Per Sweep" (int)
+                - "Bin Size (sec)" (float)
+                - "Offset (sec)" (float)
+                - "Base Tick dt (sec)" (float)
+            - data (list): List of tuples, each containing:
+                - sweep_start_time (float): Time of the sweep trigger (e.g., stimulus onset)
+                - event_times (list of float): Times of events in the sweep (e.g., neuron APs)
     """
     with open(srfpath, "rb") as f:
         raw_bytes: bytes = f.read()
